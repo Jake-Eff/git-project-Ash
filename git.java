@@ -9,9 +9,8 @@ import java.util.HexFormat;
 import java.util.List;
 
 
-public class Git 
-{
-	public static String createblob(String filePath) throws IOException 
+public class Git {
+	public static String createBlob(String filePath) throws IOException 
 	{
     	String hash = hashFile(filePath);
 
@@ -35,7 +34,7 @@ public class Git
     	}
 
 		String relativePath = root.relativize(file).toString();
-    	String hash = createblob(file.toString());
+    	String hash = createBlob(file.toString());
 		Path index = Path.of("git", "index");
     	Files.createDirectories(index.getParent());
 		List<String> lines = new ArrayList<>();
@@ -107,8 +106,8 @@ public class Git
 		{
     		String hashedFile = hashFile("Hello.txt");
     		System.out.println(hashedFile);
-			stageFile(args[0]);
-        	System.out.println("Staged: " + args[0]);
+			stageFile("test.txt");
+        	System.out.println("Staged: " + "test.txt");
 		}
 		catch (IOException e) 
 		{
