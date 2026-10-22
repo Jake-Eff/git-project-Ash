@@ -162,7 +162,13 @@ public class Git {
 			System.out.println(hashedFile);
 			stageFile("test.txt");
 			stageFile("copy.txt");
-			System.out.println("Staged: " + "test.txt");
+			// System.out.println("Staged: " + "test.txt");
+			List<String> workingList = new ArrayList<>();
+			for(String line : Files.readAllLines(Path.of("git", "index"))){
+				workingList.add("blob " + line);
+			}
+			System.out.println(createTree(workingList, ""));
+			System.out.println(createTree(workingList, ""));
 		} catch (IOException e) {
 			System.out.println("File error: " + e.getMessage());
 		}
