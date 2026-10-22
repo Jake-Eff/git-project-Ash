@@ -155,6 +155,72 @@ public class Git {
 		return treeHash;
 	}
 
+	public static String createRootTree() throws IOException {
+		List<String> workingList = new ArrayList<>();
+		for (String line : Files.readAllLines(Path.of("git", "index"))) {
+			workingList.add("blob " + line);
+		}
+
+		boolean rootCreated = false;
+		String treeHash = "";
+		while (!rootCreated) {
+			for (int i = 0; i < workingList.size(); i++) {
+				for (int j = i + 1; j < workingList.size(); j++) {
+					String firstLine = workingList.get(i);
+					String secondLine = workingList.get(j);
+					int firstSpaceOne = firstLine.indexOf(' ');
+					int secondSpaceOne = firstLine.indexOf(' ', firstSpaceOne + 1);
+					String firstPath = firstLine.substring(secondSpaceOne + 1);
+					int firstSpaceTwo = secondLine.indexOf(' ');
+					int secondSpaceTwo = secondLine.indexOf(' ', firstSpaceTwo + 1);
+					String secondPath = secondLine.substring(secondSpaceTwo + 1);
+
+					if (firstPath.compareTo(secondPath) > 0) {
+						workingList.set(i, secondLine);
+						workingList.set(j, firstLine);
+					}
+				}
+			}
+
+			String directoryPath = "";
+			int deepest = -1;
+
+			for (String line : workingList) {
+				int firstSpace = line.indexOf(' ');
+				int secondSpace = line.indexOf(' ', firstSpace + 1);
+				String path = line.substring(secondSpace + 1);
+				String directory = "";
+				int depth = 0;
+				for (int i = 0; i < path.length(); i++) {
+					if (path.charAt(i) == '/') {
+						depth++;
+						directory = path.substring(0, i);
+					}
+				}
+				if (depth > deepest) {
+					deepest = depth;
+					directoryPath = directory;
+				}
+			}
+			treeHash = createTree(workingList, directoryPath);
+			for (int i = workingList.size() - 1; i >= 0; i--) {
+				String line = workingList.get(i);
+				int firstSpace = line.indexOf(' ');
+				int secondSpace = line.indexOf(' ', firstSpace + 1);
+				String path = line.substring(secondSpace + 1);
+
+				if (directoryPath.equals("") || path.indexOf(directoryPath + "/") == 0) {
+					workingList.remove(i);
+				}
+			}
+			workingList.add("tree " + treeHash + " " + directoryPath);
+			if (directoryPath.equals("")) {
+				rootCreated = true;
+			}
+		}
+		return treeHash;
+	}
+
 	public static void main(String[] args) throws IOException {
 		init();
 		try {
@@ -162,13 +228,17 @@ public class Git {
 			System.out.println(hashedFile);
 			stageFile("test.txt");
 			stageFile("copy.txt");
+			stageFile("testfolder/secondtestfolder/hello.txt");
+			stageFile("testfolder/testfile.txt");
 			// System.out.println("Staged: " + "test.txt");
 			List<String> workingList = new ArrayList<>();
-			for(String line : Files.readAllLines(Path.of("git", "index"))){
+			for (String line : Files.readAllLines(Path.of("git", "index"))) {
 				workingList.add("blob " + line);
 			}
 			System.out.println(createTree(workingList, ""));
 			System.out.println(createTree(workingList, ""));
+			System.out.println(createRootTree());
+			System.out.println(createRootTree());
 		} catch (IOException e) {
 			System.out.println("File error: " + e.getMessage());
 		}
