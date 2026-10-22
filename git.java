@@ -43,7 +43,7 @@ public class Git {
 				if (space >= 0) {
 					String existingHash = line.substring(0, space);
 					String existingPath = line.substring(space + 1);
-					if (existingHash.equals(relativePath) && existingHash.equals(hash)) {
+					if (existingPath.equals(relativePath) && existingHash.equals(hash)) {
 						return;
 					}
 					if (!(existingPath.equals(relativePath))) {
@@ -103,6 +103,58 @@ public class Git {
 		}
 	}
 
+	public static String createTree(List<String> workingList, String dirPath) throws IOException {
+
+		StringBuilder treeContent = new StringBuilder("");
+
+		for (String line : workingList) {
+
+			int firstSpace = line.indexOf(' ');
+			int secondSpace = line.indexOf(' ', firstSpace + 1);
+			String typeAndHash = line.substring(0, secondSpace);
+			String path = line.substring(secondSpace + 1);
+
+			int lastSlash = -1;
+			for (int i = 0; i < path.length(); i++) {
+				if (path.charAt(i) == '/') {
+					lastSlash = i;
+				}
+			}
+
+			String directory = "";
+			String name = path;
+
+			if (lastSlash >= 0) {
+				directory = path.substring(0, lastSlash);
+				name = path.substring(lastSlash + 1);
+			}
+
+			if (directory.equals(dirPath)) {
+				treeContent.append(typeAndHash + " " + name + "\n");
+			}
+		}
+
+		byte[] treeBytes = treeContent.toString().getBytes();
+		MessageDigest digest;
+		try {
+			digest = MessageDigest.getInstance("SHA-1");
+		} catch (NoSuchAlgorithmException e) {
+			throw new IllegalStateException("SHA-1 is unavailable", e);
+		}
+		byte[] hash = digest.digest(treeBytes);
+		String treeHash = HexFormat.of().formatHex(hash);
+
+		Path objects = Path.of("git", "objects");
+		Files.createDirectories(objects);
+
+		Path tree = objects.resolve(treeHash);
+		if (Files.notExists(tree)) {
+			Files.write(tree, treeBytes);
+		}
+
+		return treeHash;
+	}
+
 	public static void main(String[] args) throws IOException {
 		init();
 		try {
@@ -110,7 +162,13 @@ public class Git {
 			System.out.println(hashedFile);
 			stageFile("test.txt");
 			stageFile("copy.txt");
-			System.out.println("Staged: " + "test.txt");
+			// System.out.println("Staged: " + "test.txt");
+			List<String> workingList = new ArrayList<>();
+			for(String line : Files.readAllLines(Path.of("git", "index"))){
+				workingList.add("blob " + line);
+			}
+			System.out.println(createTree(workingList, ""));
+			System.out.println(createTree(workingList, ""));
 		} catch (IOException e) {
 			System.out.println("File error: " + e.getMessage());
 		}
